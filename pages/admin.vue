@@ -1,15 +1,15 @@
 <template>
   <div class="container">
-    <div class="row justify-content-start">
-      <div class="col-md-3 mb-4" v-for="post in posts" :key="post.id">
-        <PostCard :post="post" />
-      </div>
-    </div>
+    <h1>Admin Page</h1>
   </div>
 </template>
 
 <script setup>
 import {usePostStore} from "~/store/posts.js";
+
+definePageMeta({
+  middleware: 'auth'
+})
 
 const postStore = usePostStore();
 await postStore.fetchPosts();

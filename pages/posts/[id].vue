@@ -7,10 +7,16 @@
 </template>
 
 <script setup>
-import {usePostStore} from "~/store/posts.js";
+import { usePostStore } from "~/store/posts.js";
 
 const { params } = useRoute();
 const postStore = usePostStore();
 await postStore.fetchPost(params.id);
 const post = postStore.post;
+if (!post) {
+  throw createError({
+    status: 404,
+    statusMessage: 'Post not found!',
+  })
+}
 </script>
