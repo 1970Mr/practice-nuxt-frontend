@@ -22,6 +22,7 @@
             </thead>
             <tbody>
             <tr v-for="(post, index) in posts" :key="index">
+              <th scope="row">{{ post.id }}</th>
               <th scope="row">{{ index + 1 }}</th>
               <td>{{ post.title }}</td>
               <td>{{ useTruncateString(post.content, 100) }}</td>
@@ -99,20 +100,18 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <form>
-              <div class="mb-3">
-                <label for="title" class="form-label">Title</label>
-                <input type="text" class="form-control" id="title" v-model="postModel.title">
-              </div>
-              <div class="mb-3">
-                <label for="image" class="form-label">Image Url</label>
-                <input type="url" class="form-control" id="image" v-model="postModel.image">
-              </div>
-              <div class="mb-3">
-                <label for="content" class="form-label">Content</label>
-                <textarea class="form-control" id="content" rows="3" v-model="postModel.content"></textarea>
-              </div>
-            </form>
+            <div class="mb-3">
+              <label for="title" class="form-label">Title</label>
+              <input type="text" class="form-control" id="title" v-model="postModel.title">
+            </div>
+            <div class="mb-3">
+              <label for="image" class="form-label">Image</label>
+              <input type="file" class="form-control" id="image" @change="handleFileUpload">
+            </div>
+            <div class="mb-3">
+              <label for="content" class="form-label">Content</label>
+              <textarea class="form-control" id="content" rows="3" v-model="postModel.content"></textarea>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -132,20 +131,18 @@
           </div>
           <div class="modal-body">
             <template v-if="editedPost">
-              <form>
-                <div class="mb-3">
-                  <label for="title" class="form-label">Title</label>
-                  <input type="text" class="form-control" id="title" v-model="editedPost.title">
-                </div>
-                <div class="mb-3">
-                  <label for="image" class="form-label">Image Url</label>
-                  <input type="url" class="form-control" id="image" v-model="editedPost.image">
-                </div>
-                <div class="mb-3">
-                  <label for="content" class="form-label">Content</label>
-                  <textarea class="form-control" id="content" rows="3" v-model="editedPost.content"></textarea>
-                </div>
-              </form>
+              <div class="mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" class="form-control" id="title" v-model="editedPost.title">
+              </div>
+              <div class="mb-3">
+                <label for="image" class="form-label">Image</label>
+                <input type="file" class="form-control" id="image" @change="handleFileUpload">
+              </div>
+              <div class="mb-3">
+                <label for="content" class="form-label">Content</label>
+                <textarea class="form-control" id="content" rows="3" v-model="editedPost.content"></textarea>
+              </div>
             </template>
           </div>
           <div class="modal-footer">
@@ -163,8 +160,8 @@ import {usePostStore} from "~/store/posts.js";
 import useTruncateString from "../composables/useTruncateString.js";
 import {computed} from "vue";
 
-await definePageMeta({
-  middleware: 'auth'
+definePageMeta({
+  middleware: 'auth',
 })
 
 const postStore = usePostStore();
@@ -180,12 +177,17 @@ const postStructure = {
   image: '',
 }
 const postModel = ref(structuredClone(postStructure));
+const imageFile = ref(null);
 
 onMounted(async () => {
   const {Tooltip} = await import('bootstrap');
   const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
   const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl))
 })
+
+const handleFileUpload = (event) => {
+  imageFile.value = event.target.files[0];
+}
 
 const showPost = async (post) => {
   selectedPost.value = post;
@@ -202,13 +204,19 @@ const openCreatePost = async () => {
 }
 
 const createPost = async () => {
-  if (!postModel.value.title || !postModel.value.image || !postModel.value.content) {
+  if (!postModel.value.title || !postModel.value.content || !imageFile.value) {
     return;
   }
 
-  await postStore.createPost(postModel.value);
+  const formData = new FormData();
+  formData.append('title', postModel.value.title);
+  formData.append('content', postModel.value.content);
+  formData.append('image', imageFile.value);
+
+  await postStore.createPost(formData);
 
   postModel.value = structuredClone(postStructure);
+  imageFile.value = null;
 
   const {Modal} = await import('bootstrap');
   const modal = Modal.getOrCreateInstance('#createPostModal')
@@ -216,20 +224,29 @@ const createPost = async () => {
 }
 
 const openEditPost = async (post) => {
-  editedPost.value = post;
+  editedPost.value = {...post};
   const {Modal} = await import('bootstrap');
   const modal = Modal.getOrCreateInstance('#editPostModal')
   modal.show();
 }
 
 const updatePost = async () => {
-  if (!editedPost.value.title || !editedPost.value.image || !editedPost.value.content) {
+  if (!editedPost.value.title || !editedPost.value.content) {
     return;
   }
 
-  await postStore.updatePost(editedPost.value.id, editedPost.value);
+  const formData = new FormData();
+  formData.append('title', editedPost.value.title);
+  formData.append('content', editedPost.value.content);
+
+  if (imageFile.value) {
+    formData.append('image', imageFile.value);
+  }
+
+  await postStore.updatePost(editedPost.value.id, formData);
 
   editedPost.value = null;
+  imageFile.value = null;
 
   const {Modal} = await import('bootstrap');
   const modal = Modal.getOrCreateInstance('#editPostModal')

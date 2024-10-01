@@ -54,7 +54,8 @@ export const usePostStore = defineStore('postStore', () => {
             loading.value = true;
             error.value = '';
             const data = await $fetch(`${config.public.apiBase}/posts/${id}`, {
-                method: 'PUT',
+                // method: 'PUT',
+                method: 'POST',
                 body: postData,
                 headers: { Authorization: `Bearer ${useAuthStore().token}` },
             });
