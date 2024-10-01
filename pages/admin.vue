@@ -3,7 +3,7 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between">
         <h3>Posts</h3>
-        <button class="btn btn-outline-primary rounded-5" @click="openCreatePost">
+        <button class="btn btn-outline-primary icon-btn" @click="openCreatePost">
           <i class="bi bi-plus-circle-dotted"></i>
         </button>
       </div>
@@ -22,16 +22,33 @@
             </thead>
             <tbody>
             <tr v-for="(post, index) in posts" :key="index">
-              <th scope="row">{{ post.id }}</th>
+              <th scope="row">{{ index + 1 }}</th>
               <td>{{ post.title }}</td>
               <td>{{ useTruncate(post.content, 100) }}</td>
               <td>
                 <img :src="post.image" alt="Post Image" width="70">
               </td>
               <td class="align-middle text-center">
-                <button class="btn btn-outline-secondary text-nowrap" title="Show Post" @click="showPost(post)">
-                  <i class="bi bi-arrows-fullscreen"></i>
-                </button>
+                <div class="d-flex gap-2">
+                  <button
+                      class="btn btn-outline-info text-nowrap icon-btn"
+                      data-bs-title="Show Post"
+                      data-bs-toggle="tooltip"
+                      @click="showPost(post)"
+                      :key="post.id"
+                  >
+                    <i class="bi bi-arrows-fullscreen"></i>
+                  </button>
+
+                  <button
+                      class="btn btn-outline-danger text-nowrap icon-btn"
+                      data-bs-title="Delete Post"
+                      data-bs-toggle="tooltip"
+                      @click="deletePost(post)"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
               </td>
             </tr>
             </tbody>
@@ -99,6 +116,7 @@
 <script setup>
 import {usePostStore} from "~/store/posts.js";
 import useTruncate from "../composables/useTruncate.js";
+import {computed} from "vue";
 
 await definePageMeta({
   middleware: 'auth'
@@ -106,7 +124,7 @@ await definePageMeta({
 
 const postStore = usePostStore();
 await postStore.fetchPosts();
-const posts = postStore.posts;
+const posts = computed(() => postStore.posts);
 
 const selectedPost = ref(null);
 const openCreatePostModal = ref(null);
@@ -118,37 +136,56 @@ const postStructure = {
 }
 const postModel = ref(structuredClone(postStructure));
 
+onMounted(async () => {
+  const {Tooltip} = await import('bootstrap');
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+  const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl))
+})
+
 const showPost = async (post) => {
   selectedPost.value = post;
 
-  const { Modal } = await import('bootstrap');
+  const {Modal} = await import('bootstrap');
   const modal = Modal.getOrCreateInstance('#showPostModal')
   modal.show();
 }
 
 const openCreatePost = async () => {
-  const { Modal } = await import('bootstrap');
+  const {Modal} = await import('bootstrap');
   const modal = Modal.getOrCreateInstance('#createPostModal')
   modal.show();
 }
 
 const createPost = async () => {
-  console.log(postModel.value)
-
   if (!postModel.value.title || !postModel.value.image || !postModel.value.content) {
     return;
   }
 
-  await postStore.createPost(postModel.value)
+  await postStore.createPost(postModel.value);
 
-  const { Modal } = await import('bootstrap');
+  postModel.value = structuredClone(postStructure);
+
+  const {Modal} = await import('bootstrap');
   const modal = Modal.getOrCreateInstance('#createPostModal')
   modal.hide();
+}
+
+const deletePost = async (post) => {
+  await postStore.deletePost(post.id)
 }
 </script>
 
 <style scoped>
 .bi-plus-circle-dotted {
   font-size: 1.3vw;
+}
+
+.icon-btn {
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

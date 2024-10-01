@@ -22,13 +22,14 @@ export const usePostStore = defineStore('postStore', () => {
             body: postData,
             headers: { Authorization: `Bearer ${useAuthStore().token}` }
         });
-        posts.value.push(data.value);
+        posts.value.unshift(data.value);
     }
 
     async function updatePost(id, postData) {
         const { data } = await useFetch(`${config.public.apiBase}/posts/${id}`, {
             method: 'PUT',
-            body: postData
+            body: postData,
+            headers: { Authorization: `Bearer ${useAuthStore().token}` }
         });
         const index = posts.value.findIndex(post => post.id === id);
         if (index !== -1) {
@@ -38,7 +39,8 @@ export const usePostStore = defineStore('postStore', () => {
 
     async function deletePost(id) {
         await useFetch(`${config.public.apiBase}/posts/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${useAuthStore().token}` }
         });
         posts.value = posts.value.filter(post => post.id !== id);
     }
