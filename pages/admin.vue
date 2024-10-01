@@ -24,7 +24,7 @@
             <tr v-for="(post, index) in posts" :key="index">
               <th scope="row">{{ index + 1 }}</th>
               <td>{{ post.title }}</td>
-              <td>{{ useTruncate(post.content, 100) }}</td>
+              <td>{{ useTruncateString(post.content, 100) }}</td>
               <td>
                 <img :src="post.image" alt="Post Image" width="70">
               </td>
@@ -38,6 +38,15 @@
                       :key="post.id"
                   >
                     <i class="bi bi-arrows-fullscreen"></i>
+                  </button>
+
+                  <button
+                      class="btn btn-outline-warning text-nowrap icon-btn"
+                      data-bs-title="Edit Post"
+                      data-bs-toggle="tooltip"
+                      @click="openEditPost(post)"
+                  >
+                    <i class="bi bi-pen"></i>
                   </button>
 
                   <button
@@ -58,64 +67,100 @@
     </div>
   </div>
 
-  <!-- Show Post Modal -->
-  <div class="modal fade" id="showPostModal" v-show="selectedPost">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalLabel">Show Post</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="d-flex align-items-center flex-column px-5">
-            <h3 class="mb-4">{{ selectedPost?.title }}</h3>
-            <img class="mb-4 img-fluid" :src="selectedPost?.image" alt="Post image" width="300"/>
-            <p class="mb-4">{{ selectedPost?.content }}</p>
+  <ClientOnly>
+    <!-- Show Post Modal -->
+    <div class="modal fade" id="showPostModal" v-show="false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">Show Post</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="d-flex align-items-center flex-column px-5">
+              <h3 class="mb-4">{{ selectedPost?.title }}</h3>
+              <img class="mb-4 img-fluid" :src="selectedPost?.image" alt="Post image" width="300"/>
+              <p class="mb-4">{{ selectedPost?.content }}</p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Create New Post Modal -->
-  <div class="modal fade" id="createPostModal" v-show="openCreatePostModal">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalLabel">Create Post</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form>
-            <div class="mb-3">
-              <label for="title" class="form-label">Title</label>
-              <input type="text" class="form-control" id="title" v-model="postModel.title">
-            </div>
-            <div class="mb-3">
-              <label for="image" class="form-label">Image Url</label>
-              <input type="url" class="form-control" id="image" v-model="postModel.image">
-            </div>
-            <div class="mb-3">
-              <label for="content" class="form-label">Content</label>
-              <textarea class="form-control" id="content" rows="3" v-model="postModel.content"></textarea>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" @click="createPost">Create Post</button>
+    <!-- Create New Post Modal -->
+    <div class="modal fade" id="createPostModal" v-show="false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">Create Post</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form>
+              <div class="mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" class="form-control" id="title" v-model="postModel.title">
+              </div>
+              <div class="mb-3">
+                <label for="image" class="form-label">Image Url</label>
+                <input type="url" class="form-control" id="image" v-model="postModel.image">
+              </div>
+              <div class="mb-3">
+                <label for="content" class="form-label">Content</label>
+                <textarea class="form-control" id="content" rows="3" v-model="postModel.content"></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" @click="createPost">Create Post</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- Edit Post Modal -->
+    <div class="modal fade" id="editPostModal" v-show="false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">Edit Post</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <template v-if="editedPost">
+              <form>
+                <div class="mb-3">
+                  <label for="title" class="form-label">Title</label>
+                  <input type="text" class="form-control" id="title" v-model="editedPost.title">
+                </div>
+                <div class="mb-3">
+                  <label for="image" class="form-label">Image Url</label>
+                  <input type="url" class="form-control" id="image" v-model="editedPost.image">
+                </div>
+                <div class="mb-3">
+                  <label for="content" class="form-label">Content</label>
+                  <textarea class="form-control" id="content" rows="3" v-model="editedPost.content"></textarea>
+                </div>
+              </form>
+            </template>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" @click="updatePost">Update Post</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ClientOnly>
 </template>
 
 <script setup>
 import {usePostStore} from "~/store/posts.js";
-import useTruncate from "../composables/useTruncate.js";
+import useTruncateString from "../composables/useTruncateString.js";
 import {computed} from "vue";
 
 await definePageMeta({
@@ -127,7 +172,7 @@ await postStore.fetchPosts();
 const posts = computed(() => postStore.posts);
 
 const selectedPost = ref(null);
-const openCreatePostModal = ref(null);
+const editedPost = ref(null);
 
 const postStructure = {
   title: '',
@@ -167,6 +212,27 @@ const createPost = async () => {
 
   const {Modal} = await import('bootstrap');
   const modal = Modal.getOrCreateInstance('#createPostModal')
+  modal.hide();
+}
+
+const openEditPost = async (post) => {
+  editedPost.value = post;
+  const {Modal} = await import('bootstrap');
+  const modal = Modal.getOrCreateInstance('#editPostModal')
+  modal.show();
+}
+
+const updatePost = async () => {
+  if (!editedPost.value.title || !editedPost.value.image || !editedPost.value.content) {
+    return;
+  }
+
+  await postStore.updatePost(editedPost.value.id, editedPost.value);
+
+  editedPost.value = null;
+
+  const {Modal} = await import('bootstrap');
+  const modal = Modal.getOrCreateInstance('#editPostModal')
   modal.hide();
 }
 

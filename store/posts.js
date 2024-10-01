@@ -1,49 +1,89 @@
-import { defineStore } from 'pinia';
-import {useAuthStore} from "~/store/auth.js";
+import {defineStore} from 'pinia';
+import {useAuthStore} from '~/store/auth.js';
 
 export const usePostStore = defineStore('postStore', () => {
-    const config = useRuntimeConfig()
-    const posts = ref([])
-    const post = ref(null)
+    const config = useRuntimeConfig();
+    const posts = ref([]);
+    const post = ref(null);
+    const loading = ref(false);
+    const error = ref('');
 
     async function fetchPosts() {
-        const { data } = await useFetch(`${config.public.apiBase}/posts`);
-        posts.value = data.value;
+        try {
+            loading.value = true;
+            error.value = '';
+            posts.value = await $fetch(`${config.public.apiBase}/posts`);
+        } catch (err) {
+            error.value = err.message || 'Failed to fetch posts.';
+        } finally {
+            loading.value = false;
+        }
     }
 
     async function fetchPost(id) {
-        const { data } = await useFetch(`${config.public.apiBase}/posts/${id}`);
-        post.value = data.value;
+        try {
+            loading.value = true;
+            error.value = '';
+            post.value = await $fetch(`${config.public.apiBase}/posts/${id}`);
+        } catch (err) {
+            error.value = err.message || `Failed to fetch post with ID: ${id}.`;
+        } finally {
+            loading.value = false;
+        }
     }
 
     async function createPost(postData) {
-        const { data } = await useFetch(`${config.public.apiBase}/posts`, {
-            method: 'POST',
-            body: postData,
-            headers: { Authorization: `Bearer ${useAuthStore().token}` }
-        });
-        posts.value.unshift(data.value);
+        try {
+            loading.value = true;
+            error.value = '';
+            const data = await $fetch(`${config.public.apiBase}/posts`, {
+                method: 'POST',
+                body: postData,
+                headers: { Authorization: `Bearer ${useAuthStore().token}` },
+            });
+            posts.value.unshift(data);
+        } catch (err) {
+            error.value = err.message || 'Failed to create post.';
+        } finally {
+            loading.value = false;
+        }
     }
 
     async function updatePost(id, postData) {
-        const { data } = await useFetch(`${config.public.apiBase}/posts/${id}`, {
-            method: 'PUT',
-            body: postData,
-            headers: { Authorization: `Bearer ${useAuthStore().token}` }
-        });
-        const index = posts.value.findIndex(post => post.id === id);
-        if (index !== -1) {
-            posts.value[index] = data.value;
+        try {
+            loading.value = true;
+            error.value = '';
+            const data = await $fetch(`${config.public.apiBase}/posts/${id}`, {
+                method: 'PUT',
+                body: postData,
+                headers: { Authorization: `Bearer ${useAuthStore().token}` },
+            });
+            const index = posts.value.findIndex(post => post.id === id);
+            if (index !== -1) {
+                posts.value[index] = data;
+            }
+        } catch (err) {
+            error.value = err.message || `Failed to update post with ID: ${id}.`;
+        } finally {
+            loading.value = false;
         }
     }
 
     async function deletePost(id) {
-        await useFetch(`${config.public.apiBase}/posts/${id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${useAuthStore().token}` }
-        });
-        posts.value = posts.value.filter(post => post.id !== id);
+        try {
+            loading.value = true;
+            error.value = '';
+            await $fetch(`${config.public.apiBase}/posts/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${useAuthStore().token}` },
+            });
+            posts.value = posts.value.filter(post => post.id !== id);
+        } catch (err) {
+            error.value = err.message || `Failed to delete post with ID: ${id}.`;
+        } finally {
+            loading.value = false;
+        }
     }
 
-    return { posts, post, fetchPosts, fetchPost, createPost, updatePost, deletePost }
+    return { posts, post, loading, error, fetchPosts, fetchPost, createPost, updatePost, deletePost };
 });
