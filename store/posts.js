@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import {useAuthStore} from "~/store/auth.js";
 
 export const usePostStore = defineStore('postStore', () => {
     const config = useRuntimeConfig()
@@ -16,15 +17,16 @@ export const usePostStore = defineStore('postStore', () => {
     }
 
     async function createPost(postData) {
-        const { data } = await useFetch('/api/posts', {
+        const { data } = await useFetch(`${config.public.apiBase}/posts`, {
             method: 'POST',
-            body: postData
+            body: postData,
+            headers: { Authorization: `Bearer ${useAuthStore().token}` }
         });
         posts.value.push(data.value);
     }
 
     async function updatePost(id, postData) {
-        const { data } = await useFetch(`/api/posts/${id}`, {
+        const { data } = await useFetch(`${config.public.apiBase}/posts/${id}`, {
             method: 'PUT',
             body: postData
         });
@@ -35,7 +37,7 @@ export const usePostStore = defineStore('postStore', () => {
     }
 
     async function deletePost(id) {
-        await useFetch(`/api/posts/${id}`, {
+        await useFetch(`${config.public.apiBase}/posts/${id}`, {
             method: 'DELETE'
         });
         posts.value = posts.value.filter(post => post.id !== id);

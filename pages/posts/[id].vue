@@ -1,7 +1,7 @@
 <template>
-  <div class="container d-flex align-items-center flex-column px-5">
+  <div class="container d-flex align-items-center flex-column">
     <h3 class="mb-4">{{ post.title }}</h3>
-    <img class="mb-4 img-fluid" :src="post.image" alt="Post image" width="700vw" />
+    <img class="mb-4 img-fluid" :src="post.image" alt="Post image" width="500" />
     <p class="mb-4">{{ post.content }}</p>
   </div>
 </template>
@@ -20,3 +20,9 @@ if (!post) {
   })
 }
 </script>
+
+<style scoped>
+.container {
+  padding: 0 10rem;
+}
+</style>
