@@ -22,7 +22,6 @@
             </thead>
             <tbody>
             <tr v-for="(post, index) in posts" :key="index">
-              <th scope="row">{{ post.id }}</th>
               <th scope="row">{{ index + 1 }}</th>
               <td>{{ post.title }}</td>
               <td>{{ useTruncateString(post.content, 100) }}</td>
